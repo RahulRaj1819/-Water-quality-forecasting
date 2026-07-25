@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Upload a CSV file for batch water quality prediction.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💧</text></svg>">
+    <title>Batch Prediction — Water Quality Analysis</title>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-icon">🚀</div>
+            <h1>Batch Prediction</h1>
+            <p class="subtitle">Upload a CSV to predict potability for multiple samples at once</p>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 12px; flex-wrap: wrap;">
+                <a href="/" class="nav-link">💧 Single Prediction</a>
+                <a href="/upload" class="nav-link">📊 Data Analysis</a>
+            </div>
+        </div>
+
+        <!-- Info bar -->
+        <div class="info-bar">
+            <span class="icon">ℹ️</span>
+            <span>Upload a CSV containing water quality parameters. The system will use the <strong>HNB Ensemble</strong> model to predict potability for all rows and calculate the Water Quality Index (WQI). The results will be automatically downloaded as a new CSV.</span>
+        </div>
+
+        <!-- Upload form -->
+        <form id="uploadForm" action="/batch_predict" method="POST" enctype="multipart/form-data">
+
+            <!-- Drop zone -->
+            <div class="upload-zone" id="dropZone">
+                <div class="upload-zone-icon">📄</div>
+                <div class="upload-zone-text">
+                    <strong>Drop your CSV file here</strong>
+                    <span>or click to browse</span>
+                </div>
+                <div class="upload-zone-hint">Ensure columns match: ph, Hardness, Solids, Chloramines, Sulfate, Conductivity, Organic_carbon, Trihalomethanes, Turbidity<br>Supports .csv files up to 10 MB</div>
+                <input type="file" id="fileInput" name="dataset" accept=".csv" required
+                       style="display: none;">
+            </div>
+
+            <!-- File info (shown after selection) -->
+            <div class="file-info" id="fileInfo" style="display: none;">
+                <div class="file-info-icon">✅</div>
+                <div class="file-info-details">
+                    <div class="file-info-name" id="fileName"></div>
+                    <div class="file-info-size" id="fileSize"></div>
+                </div>
+                <button type="button" class="file-info-remove" id="removeFile">✕</button>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="btn-predict" id="btn-analyze" style="margin-top: 24px;">
+                ⚙️&nbsp; Process Batch Predictions
+            </button>
+
+            <!-- Loading overlay -->
+            <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Processing Batch Predictions...</div>
+                <div class="loading-sub">Your download will start automatically when finished.</div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const dropZone  = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo  = document.getElementById('fileInfo');
+        const fileName  = document.getElementById('fileName');
+        const fileSize  = document.getElementById('fileSize');
+        const removeBtn = document.getElementById('removeFile');
+        const form      = document.getElementById('uploadForm');
+        const overlay   = document.getElementById('loadingOverlay');
+
+        // Click to browse
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // Drag & drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                showFileInfo(e.dataTransfer.files[0]);
+            }
+        });
+
+        // File selected
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) showFileInfo(fileInput.files[0]);
+        });
+
+        function showFileInfo(file) {
+            if (file.size > 10 * 1024 * 1024) {
+                alert("File exceeds the 10 MB limit. Please upload a smaller file.");
+                fileInput.value = '';
+                return;
+            }
+            fileName.textContent = file.name;
+            const kb = (file.size / 1024).toFixed(1);
+            const mb = (file.size / 1048576).toFixed(2);
+            fileSize.textContent = file.size > 1048576 ? `${mb} MB` : `${kb} KB`;
+            dropZone.style.display = 'none';
+            fileInfo.style.display = 'flex';
+        }
+
+        removeBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            dropZone.style.display = 'flex';
+            fileInfo.style.display = 'none';
+        });
+
+        // Show loading on submit and hide after a delay
+        form.addEventListener('submit', () => {
+            overlay.style.display = 'flex';
+            
+            // Assume download will start soon, hide overlay after a short delay
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                
+                // Reset form
+                fileInput.value = '';
+                dropZone.style.display = 'flex';
+                fileInfo.style.display = 'none';
+            }, 5000);
+        });
+    </script>
+    {% include 'chatbot.html' %}
+</body>
+
+</html>

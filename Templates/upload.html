@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Upload a water quality dataset for comprehensive analysis — EDA, missing values, correlation, model training.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💧</text></svg>">
+    <title>Upload Dataset — Water Quality Analysis</title>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-icon">📂</div>
+            <h1>Dataset Analysis</h1>
+            <p class="subtitle">Upload a CSV file for comprehensive water quality analysis</p>
+            <a href="/" class="nav-link" style="margin-top: 12px;">💧 Back to Prediction</a>
+        </div>
+
+        <!-- Info bar -->
+        <div class="info-bar">
+            <span class="icon">ℹ️</span>
+            <span>Upload a CSV with water quality parameters. The system will analyze missing values,
+            generate visualizations, and train <strong>all models</strong> (XGBoost, LightGBM, MLP, HNB Ensemble).
+            Requires a <strong>Potability</strong> column for model training.</span>
+        </div>
+
+        <!-- Upload form -->
+        <form id="uploadForm" action="/analyze" method="POST" enctype="multipart/form-data">
+
+            <!-- Drop zone -->
+            <div class="upload-zone" id="dropZone">
+                <div class="upload-zone-icon">📄</div>
+                <div class="upload-zone-text">
+                    <strong>Drop your CSV file here</strong>
+                    <span>or click to browse</span>
+                </div>
+                <div class="upload-zone-hint">Supports .csv files up to 10 MB</div>
+                <input type="file" id="fileInput" name="dataset" accept=".csv" required
+                       style="display: none;">
+            </div>
+
+            <!-- File info (shown after selection) -->
+            <div class="file-info" id="fileInfo" style="display: none;">
+                <div class="file-info-icon">✅</div>
+                <div class="file-info-details">
+                    <div class="file-info-name" id="fileName"></div>
+                    <div class="file-info-size" id="fileSize"></div>
+                </div>
+                <button type="button" class="file-info-remove" id="removeFile">✕</button>
+            </div>
+
+            <!-- What will be analyzed -->
+            <div class="section-title" style="margin-top: 28px;">
+                <span>📊 Analysis Pipeline</span>
+            </div>
+
+            <div class="pipeline-grid">
+                <div class="pipeline-item">
+                    <span class="pipeline-num">1</span>
+                    <span>Dataset Overview & Stats</span>
+                </div>
+                <div class="pipeline-item">
+                    <span class="pipeline-num">2</span>
+                    <span>Missing Value Analysis</span>
+                </div>
+                <div class="pipeline-item">
+                    <span class="pipeline-num">3</span>
+                    <span>Correlation Heatmap</span>
+                </div>
+                <div class="pipeline-item">
+                    <span class="pipeline-num">4</span>
+                    <span>Feature Distributions</span>
+                </div>
+                <div class="pipeline-item">
+                    <span class="pipeline-num">5</span>
+                    <span>KNN Imputation & Scaling</span>
+                </div>
+                <div class="pipeline-item">
+                    <span class="pipeline-num">6</span>
+                    <span>Train All Models + HNB</span>
+                </div>
+                <div class="pipeline-item">
+                    <span class="pipeline-num">7</span>
+                    <span>Confusion Matrices & ROC</span>
+                </div>
+                <div class="pipeline-item">
+                    <span class="pipeline-num">8</span>
+                    <span>Feature Importance</span>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="btn-predict" id="btn-analyze">
+                🚀&nbsp; Run Full Analysis
+            </button>
+
+            <!-- Loading overlay -->
+            <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Analyzing dataset & training models...</div>
+                <div class="loading-sub">This may take 30–60 seconds for large datasets</div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const dropZone  = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo  = document.getElementById('fileInfo');
+        const fileName  = document.getElementById('fileName');
+        const fileSize  = document.getElementById('fileSize');
+        const removeBtn = document.getElementById('removeFile');
+        const form      = document.getElementById('uploadForm');
+        const overlay   = document.getElementById('loadingOverlay');
+
+        // Click to browse
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // Drag & drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                showFileInfo(e.dataTransfer.files[0]);
+            }
+        });
+
+        // File selected
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) showFileInfo(fileInput.files[0]);
+        });
+
+        function showFileInfo(file) {
+            if (file.size > 10 * 1024 * 1024) {
+                alert("File exceeds the 10 MB limit. Please upload a smaller file.");
+                fileInput.value = '';
+                return;
+            }
+            fileName.textContent = file.name;
+            const kb = (file.size / 1024).toFixed(1);
+            const mb = (file.size / 1048576).toFixed(2);
+            fileSize.textContent = file.size > 1048576 ? `${mb} MB` : `${kb} KB`;
+            dropZone.style.display = 'none';
+            fileInfo.style.display = 'flex';
+        }
+
+        removeBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            dropZone.style.display = 'flex';
+            fileInfo.style.display = 'none';
+        });
+
+        // Show loading on submit
+        form.addEventListener('submit', () => {
+            overlay.style.display = 'flex';
+        });
+
+        // Stagger animation
+        document.querySelectorAll('.pipeline-item').forEach((el, i) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(10px)';
+            el.style.transition = `opacity 0.35s ease ${i * 0.06}s, transform 0.35s ease ${i * 0.06}s`;
+            requestAnimationFrame(() => {
+                el.style.opacity = '1';
+                el.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+    {% include 'chatbot.html' %}
+</body>
+
+</html>

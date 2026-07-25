@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Water quality standards and guidelines — safe ranges, ideal values, health effects, and treatment methods for all key water parameters.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💧</text></svg>">
+    <title>Water Quality Guidelines — Safe Standards</title>
+</head>
+
+<body>
+    <div class="guidelines-page">
+
+        <!-- Header -->
+        <div class="result-container">
+            <div class="header">
+                <div class="header-icon">📋</div>
+                <h1>Water Quality Guidelines</h1>
+                <p class="subtitle">WHO / EPA recommended safe ranges for drinking water parameters</p>
+            </div>
+
+            <div class="info-bar" style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <span class="icon">💡</span>
+                <span>These values are based on <strong>World Health Organization (WHO)</strong> and
+                <strong>U.S. Environmental Protection Agency (EPA)</strong> drinking water standards.
+                Ideal ranges ensure both safety and pleasant taste.</span>
+            </div>
+        </div>
+
+        <!-- Parameter cards -->
+        {% for s in standards %}
+        <div class="guideline-card" style="--card-accent: {{ s.color }};">
+
+            <!-- Card header -->
+            <div class="guideline-card-top">
+                <div class="guideline-icon" style="background: {{ s.color }}15; color: {{ s.color }};">{{ s.icon }}</div>
+                <div class="guideline-title-block">
+                    <h2 class="guideline-param" style="color: {{ s.color }};">{{ s.param }}</h2>
+                    {% if s.unit %}
+                    <span class="guideline-unit">Unit: {{ s.unit }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Description -->
+            <p class="guideline-desc">{{ s.description }}</p>
+
+            <!-- Range bar visual -->
+            <div class="guideline-range-section">
+                <div class="guideline-range-labels">
+                    <span class="guideline-range-label">Safe Range</span>
+                    <span class="guideline-range-value" style="color: {{ s.color }};">
+                        {{ s.safe_min }} – {{ s.safe_max }}{% if s.unit %} {{ s.unit }}{% endif %}
+                    </span>
+                </div>
+                <div class="guideline-range-bar-track">
+                    <div class="guideline-range-bar-fill" style="background: {{ s.color }};"></div>
+                </div>
+                <div class="guideline-ideal">
+                    <span>🎯 Ideal:</span>
+                    <strong style="color: {{ s.color }};">{{ s.ideal }}{% if s.unit %} {{ s.unit }}{% endif %}</strong>
+                </div>
+            </div>
+
+            <!-- Info rows -->
+            <div class="guideline-details">
+                <div class="guideline-detail-row">
+                    <div class="guideline-detail-icon">⚠️</div>
+                    <div>
+                        <div class="guideline-detail-label">Health Effects</div>
+                        <div class="guideline-detail-text">{{ s.health_effects }}</div>
+                    </div>
+                </div>
+                <div class="guideline-detail-row">
+                    <div class="guideline-detail-icon">🛠️</div>
+                    <div>
+                        <div class="guideline-detail-label">Treatment</div>
+                        <div class="guideline-detail-text">{{ s.treatment }}</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        {% endfor %}
+
+        <!-- Navigation -->
+        <div style="text-align: center; padding: 8px 0 40px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+            <a href="/" class="btn-back" id="btn-analyze">💧 Analyze Water Sample</a>
+        </div>
+
+    </div>
+
+    <script>
+        // Stagger-in animation
+        document.querySelectorAll('.guideline-card, .result-container').forEach((el, i) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(18px)';
+            el.style.transition = `opacity 0.45s ease ${i * 0.07}s, transform 0.45s ease ${i * 0.07}s`;
+            requestAnimationFrame(() => {
+                el.style.opacity = '1';
+                el.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Animate range bar fills
+        document.querySelectorAll('.guideline-range-bar-fill').forEach((el, i) => {
+            el.style.width = '0';
+            el.style.transition = `width 0.7s cubic-bezier(0.4, 0, 0.2, 1) ${0.3 + i * 0.07}s`;
+            requestAnimationFrame(() => { el.style.width = '100%'; });
+        });
+    </script>
+    {% include 'chatbot.html' %}
+</body>
+
+</html>

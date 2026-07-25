@@ -1,0 +1,363 @@
+<!-- Chatbot Widget -->
+<style>
+    /* Chatbot Styles */
+    .chat-widget-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        font-family: inherit;
+    }
+
+    .chat-bubble {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+        cursor: pointer;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    }
+
+    .chat-bubble:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
+    }
+
+    .chat-bubble-icon {
+        font-size: 30px;
+        color: white;
+    }
+
+    .chat-window {
+        position: absolute;
+        bottom: 80px;
+        right: 0;
+        width: 350px;
+        max-width: calc(100vw - 40px);
+        height: 500px;
+        max-height: calc(100vh - 120px);
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(20px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    @media (max-width: 640px) {
+        .chat-window {
+            width: calc(100vw - 40px);
+            right: 0;
+        }
+        
+        /* If chat-widget-container is at right: 20px, then right: 0 inside it means it reaches the 20px padding on the right. 
+           To center it: */
+        .chat-widget-container {
+            right: 10px;
+            bottom: 10px;
+        }
+        .chat-window {
+            max-width: calc(100vw - 20px);
+            width: 350px; /* will be constrained by max-width */
+            bottom: 70px;
+        }
+        .chat-bubble {
+            width: 50px;
+            height: 50px;
+        }
+        .chat-bubble-icon {
+            font-size: 24px;
+        }
+    }
+
+    .chat-window.open {
+        opacity: 1;
+        pointer-events: all;
+        transform: translateY(0);
+    }
+
+    .chat-header {
+        background: rgba(30, 41, 59, 0.8);
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .chat-header h3 {
+        margin: 0;
+        font-size: 16px;
+        color: #f8fafc;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .close-chat {
+        background: none;
+        border: none;
+        color: #94a3b8;
+        font-size: 20px;
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+
+    .close-chat:hover {
+        color: #f8fafc;
+    }
+
+    .chat-body {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .chat-message {
+        max-width: 85%;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 14px;
+        line-height: 1.5;
+        word-wrap: break-word;
+    }
+
+    .chat-message.bot {
+        align-self: flex-start;
+        background: rgba(51, 65, 85, 0.8);
+        color: #f8fafc;
+        border-bottom-left-radius: 4px;
+    }
+
+    .chat-message.user {
+        align-self: flex-end;
+        background: #3b82f6;
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+
+    /* Markdown basics inside bot messages */
+    .chat-message.bot strong {
+        color: #93c5fd;
+    }
+    .chat-message.bot p {
+        margin: 0 0 8px 0;
+    }
+    .chat-message.bot p:last-child {
+        margin: 0;
+    }
+    .chat-message.bot ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .chat-footer {
+        padding: 12px 15px;
+        background: rgba(30, 41, 59, 0.8);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        gap: 10px;
+    }
+
+    .chat-input {
+        flex: 1;
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 20px;
+        padding: 8px 15px;
+        color: white;
+        font-family: inherit;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s ease;
+    }
+
+    .chat-input:focus {
+        border-color: #3b82f6;
+    }
+
+    .chat-send-btn {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+    .chat-send-btn:hover {
+        background: #2563eb;
+    }
+
+    .typing-indicator {
+        display: none;
+        align-self: flex-start;
+        background: rgba(51, 65, 85, 0.8);
+        padding: 12px 16px;
+        border-radius: 12px;
+        border-bottom-left-radius: 4px;
+    }
+
+    .typing-indicator.active {
+        display: flex;
+        gap: 4px;
+    }
+
+    .dot {
+        width: 6px;
+        height: 6px;
+        background: #94a3b8;
+        border-radius: 50%;
+        animation: typing 1.4s infinite ease-in-out both;
+    }
+
+    .dot:nth-child(1) { animation-delay: -0.32s; }
+    .dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes typing {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+    }
+    
+    /* Formatting rendered markdown */
+    .markdown-rendered h1, .markdown-rendered h2, .markdown-rendered h3 {
+        margin-top: 10px; margin-bottom: 5px; font-size: 1.1em;
+    }
+    .markdown-rendered ul, .markdown-rendered ol {
+        margin-top: 5px; margin-bottom: 10px; padding-left: 20px;
+    }
+    .markdown-rendered p { margin-top: 5px; margin-bottom: 5px; }
+</style>
+
+<div class="chat-widget-container">
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header">
+            <h3>🤖 HNB Water Quality Assistant</h3>
+            <button class="close-chat" id="closeChatBtn">&times;</button>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="chat-message bot">
+                Hello! I am your Water Quality AI Assistant. I can help you understand water quality suggestions or explain why our Hybrid Neural Boosting (HNB) model is highly effective. How can I assist you today?
+            </div>
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            </div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Ask about water quality or HNB...">
+            <button class="chat-send-btn" id="chatSendBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+    </div>
+    <div class="chat-bubble" id="chatBubble">
+        <span class="chat-bubble-icon">💬</span>
+    </div>
+</div>
+
+<!-- Include marked.js for simple markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatBubble = document.getElementById('chatBubble');
+        const chatWindow = document.getElementById('chatWindow');
+        const closeChatBtn = document.getElementById('closeChatBtn');
+        const chatInput = document.getElementById('chatInput');
+        const chatSendBtn = document.getElementById('chatSendBtn');
+        const chatBody = document.getElementById('chatBody');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        // Toggle chat window
+        chatBubble.addEventListener('click', () => {
+            chatWindow.classList.add('open');
+            chatBubble.style.transform = 'scale(0)';
+        });
+
+        closeChatBtn.addEventListener('click', () => {
+            chatWindow.classList.remove('open');
+            chatBubble.style.transform = 'scale(1)';
+        });
+
+        // Add message to chat
+        function addMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('chat-message', sender);
+            
+            if (sender === 'bot') {
+                msgDiv.classList.add('markdown-rendered');
+                msgDiv.innerHTML = marked.parse(text);
+            } else {
+                msgDiv.textContent = text;
+            }
+            
+            // Insert before typing indicator
+            chatBody.insertBefore(msgDiv, typingIndicator);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        // Handle sending message
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, 'user');
+            chatInput.value = '';
+            
+            // Show typing indicator
+            typingIndicator.classList.add('active');
+            scrollToBottom();
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                const data = await response.json();
+                typingIndicator.classList.remove('active');
+                
+                if (data.response) {
+                    addMessage(data.response, 'bot');
+                } else {
+                    addMessage("I'm sorry, I couldn't process that request.", 'bot');
+                }
+            } catch (error) {
+                typingIndicator.classList.remove('active');
+                addMessage("Error connecting to the server. Please make sure the Flask backend is running.", 'bot');
+            }
+        }
+
+        chatSendBtn.addEventListener('click', sendMessage);
+        
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    });
+</script>

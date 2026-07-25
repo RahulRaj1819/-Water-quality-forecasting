@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Water quality prediction results with comprehensive model analysis, confusion matrices, and performance charts.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💧</text></svg>">
+    <title>Result — Water Quality Analysis</title>
+</head>
+
+<body>
+    <div class="result-page">
+
+        <!-- ═══════════════════════════════════════════════════════
+             1. PRIMARY RESULT CARD
+             ═══════════════════════════════════════════════════════ -->
+        <div class="result-container">
+            <div class="header">
+                <div class="header-icon">{{ '✅' if prediction == 'Safe' else '⚠️' }}</div>
+                <h1>Analysis Complete</h1>
+            </div>
+
+            <div class="result-badge {{ 'safe' if prediction == 'Safe' else 'unsafe' }}">
+                {{ '✅' if prediction == 'Safe' else '🚫' }}
+                Water is {{ prediction }}
+            </div>
+
+            <p class="result-subtitle">
+                {% if prediction == 'Safe' %}
+                    Based on the <strong>HNB Ensemble</strong> model, the analyzed sample meets quality standards
+                    and is <strong>potable</strong> — suitable for human consumption.
+                {% else %}
+                    Based on the <strong>HNB Ensemble</strong> model, the analyzed sample <strong>does not meet</strong>
+                    quality standards. It is <strong>not recommended</strong> for consumption without treatment.
+                {% endif %}
+            </p>
+
+            <!-- Input parameters summary -->
+            {% if params %}
+            <table class="params-summary">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th style="text-align:right;">Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, value in params.items() %}
+                    <tr>
+                        <td>{{ name }}</td>
+                        <td>{{ value }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+             1b. TREATMENT SUGGESTIONS (only for Unsafe)
+             ═══════════════════════════════════════════════════════ -->
+        {% if prediction == 'Unsafe' and suggestions %}
+        <div class="chart-card suggestions-card">
+            <div class="chart-card-header">
+                <h2>🛠️ Treatment Suggestions to Make Water Safe</h2>
+                <p class="chart-desc">Based on your water parameters, here are specific treatment recommendations to improve potability.</p>
+            </div>
+
+            <div class="suggestions-list">
+                {% for s in suggestions %}
+                <div class="suggestion-item">
+                    <div class="suggestion-icon">{{ s.icon }}</div>
+                    <div class="suggestion-body">
+                        <div class="suggestion-param">{{ s.param }}</div>
+                        <div class="suggestion-status">{{ s.status }}</div>
+                        <div class="suggestion-advice">{{ s.advice }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="suggestion-footer">
+                <span class="suggestion-footer-icon">⚠️</span>
+                <span>These are general guidelines based on WHO/EPA standards. Always consult a certified water treatment professional before implementing treatment solutions.</span>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+             1b-ii. GENERAL TREATMENT METHODS (always shown for Unsafe)
+             ═══════════════════════════════════════════════════════ -->
+        <div class="chart-card suggestions-card">
+            <div class="chart-card-header">
+                <h2>💊 Recommended Treatment Methods</h2>
+                <p class="chart-desc">General purification techniques recommended for making unsafe water potable.</p>
+            </div>
+
+            <div class="treatment-grid">
+                <div class="treatment-card">
+                    <div class="treatment-icon">🔥</div>
+                    <div class="treatment-name">Boiling</div>
+                    <div class="treatment-desc">Heat water to a rolling boil for at least 1 minute (3 min at high altitudes) to kill bacteria, viruses, and parasites.</div>
+                </div>
+
+                <div class="treatment-card">
+                    <div class="treatment-icon">💧</div>
+                    <div class="treatment-name">Reverse Osmosis (RO)</div>
+                    <div class="treatment-desc">Forces water through a semi-permeable membrane removing up to 99% of dissolved salts, heavy metals, and organic contaminants.</div>
+                </div>
+
+                <div class="treatment-card">
+                    <div class="treatment-icon">🔦</div>
+                    <div class="treatment-name">UV Purification</div>
+                    <div class="treatment-desc">Ultraviolet light at 254 nm wavelength destroys the DNA of microorganisms, effectively disinfecting without adding chemicals.</div>
+                </div>
+
+                <div class="treatment-card">
+                    <div class="treatment-icon">🪨</div>
+                    <div class="treatment-name">Activated Carbon Filter</div>
+                    <div class="treatment-desc">Adsorbs chlorine, organic compounds, pesticides, and unpleasant odors/tastes through porous carbon media.</div>
+                </div>
+
+                <div class="treatment-card">
+                    <div class="treatment-icon">⚗️</div>
+                    <div class="treatment-name">Chlorination</div>
+                    <div class="treatment-desc">Adding controlled amounts of chlorine (0.2–0.5 mg/L residual) kills harmful pathogens. Widely used in municipal water treatment.</div>
+                </div>
+
+                <div class="treatment-card">
+                    <div class="treatment-icon">🔄</div>
+                    <div class="treatment-name">Ion Exchange</div>
+                    <div class="treatment-desc">Replaces harmful ions (e.g. heavy metals, nitrates) with safe ions using specialized resin beads. Excellent for water softening.</div>
+                </div>
+
+                <div class="treatment-card">
+                    <div class="treatment-icon">🏗️</div>
+                    <div class="treatment-name">Sedimentation</div>
+                    <div class="treatment-desc">Allows suspended particles to settle by gravity. Often combined with coagulation (alum/ferric chloride) for turbid water pre-treatment.</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ═══════════════════════════════════════════════════════
+             1c. WATER QUALITY INDEX (WQI) & IMPACT
+             ═══════════════════════════════════════════════════════ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>🌊 Water Quality Index (WQI) & Parameter Impact</h2>
+                <p class="chart-desc">Overall composite score based on WHO/EPA standard ranges and how each parameter influenced it.</p>
+            </div>
+            
+            <div class="wqi-container">
+                <div class="wqi-score-circle" style="border-color: {{ '#34d399' if wqi >= 70 else '#fbbf24' if wqi >= 40 else '#f87171' }}">
+                    <span class="wqi-value" style="color: {{ '#34d399' if wqi >= 70 else '#fbbf24' if wqi >= 40 else '#f87171' }}">{{ wqi }}</span>
+                    <span class="wqi-label">/ 100</span>
+                </div>
+                <div class="wqi-text">
+                    <h3 style="color: {{ '#34d399' if wqi >= 70 else '#fbbf24' if wqi >= 40 else '#f87171' }}; margin: 0 0 6px 0; font-size: 1.25rem;">
+                        {{ 'Excellent' if wqi >= 85 else 'Good' if wqi >= 70 else 'Fair' if wqi >= 40 else 'Poor' }} Quality
+                    </h3>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">
+                        This score reflects the deviation of your water parameters from ideal health standards. A score closer to 100 indicates safer water.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="impact-grid" style="margin-top: 24px;">
+                {% for imp in impacts %}
+                <div class="impact-item" style="border-left: 3px solid {{ imp.color }};">
+                    <div class="impact-header">
+                        <span class="impact-name">{{ imp.name }}</span>
+                        <span class="impact-status" style="color:{{ imp.color }}">{{ imp.status }}</span>
+                    </div>
+                    <div class="impact-bar-track">
+                        <div class="impact-bar-fill" style="width:{{ imp.score }}%; background-color:{{ imp.color }};"></div>
+                    </div>
+                    <div class="impact-val">{{ imp.value | round(2) }} (Score: {{ imp.score | round(0) }})</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+             2. PER-MODEL PREDICTIONS
+             ═══════════════════════════════════════════════════════ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>🎯 Per-Model Prediction for Your Sample</h2>
+                <p class="chart-desc">How each model classifies your water sample, with confidence levels.</p>
+            </div>
+
+            <!-- Model prediction cards -->
+            <div class="model-pred-grid">
+                {% for m in model_predictions %}
+                <div class="model-pred-item {{ 'safe-glow' if m.prediction == 1 else 'unsafe-glow' }}">
+                    <div class="model-pred-name">{{ m.name }}</div>
+                    <div class="model-pred-label {{ 'safe' if m.prediction == 1 else 'unsafe' }}">
+                        {{ '✅ Safe' if m.prediction == 1 else '🚫 Unsafe' }}
+                    </div>
+                    <div class="model-pred-bar-track">
+                        <div class="model-pred-bar-fill {{ 'safe' if m.prediction == 1 else 'unsafe' }}"
+                             style="width: {{ (m.proba_safe * 100)|round(1) }}%"></div>
+                    </div>
+                    <div class="model-pred-conf">{{ m.confidence|round(1) }}% confidence</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Prediction gauge chart -->
+            <div class="chart-img-wrapper">
+                <img src="data:image/png;base64,{{ chart_gauge }}" alt="Per-model prediction gauge" class="chart-img">
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+             3. TEST SET PERFORMANCE TABLE
+             ═══════════════════════════════════════════════════════ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>📊 Model Performance Metrics <span class="badge-sm">Test Set</span></h2>
+                <p class="chart-desc">Accuracy, Precision, Recall, F1-Score and ROC-AUC evaluated on 20% held-out test data.</p>
+            </div>
+
+            <div class="metrics-table-wrapper">
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Accuracy</th>
+                            <th>Precision</th>
+                            <th>Recall</th>
+                            <th>F1-Score</th>
+                            <th>ROC-AUC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in metrics_table %}
+                        <tr class="{{ 'highlight-row' if m.name == 'HNB Ensemble' }}">
+                            <td class="model-name-cell">
+                                {{ m.name }}
+                                {% if m.name == 'HNB Ensemble' %}<span class="star-badge">★ Best</span>{% endif %}
+                            </td>
+                            <td>{{ "%.4f"|format(m.accuracy) }}</td>
+                            <td>{{ "%.4f"|format(m.precision) }}</td>
+                            <td>{{ "%.4f"|format(m.recall) }}</td>
+                            <td>{{ "%.4f"|format(m.f1) }}</td>
+                            <td>{{ "%.4f"|format(m.auc) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+             4. MODEL COMPARISON CHART
+             ═══════════════════════════════════════════════════════ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>📈 Model Performance Comparison</h2>
+                <p class="chart-desc">Grouped bar chart comparing all metrics across the four models.</p>
+            </div>
+            <div class="chart-img-wrapper">
+                <img src="data:image/png;base64,{{ chart_comparison }}" alt="Model comparison chart" class="chart-img">
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+             5. CONFUSION MATRICES
+             ═══════════════════════════════════════════════════════ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>🔢 Confusion Matrices — All Models</h2>
+                <p class="chart-desc">True vs predicted classifications on the test set. Diagonal = correct predictions.</p>
+            </div>
+            <div class="chart-img-wrapper">
+                <img src="data:image/png;base64,{{ chart_confusion }}" alt="Confusion matrices" class="chart-img">
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+             6. ROC CURVES
+             ═══════════════════════════════════════════════════════ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>📉 ROC Curves</h2>
+                <p class="chart-desc">Receiver Operating Characteristic curves showing the trade-off between TPR and FPR.</p>
+            </div>
+            <div class="chart-img-wrapper">
+                <img src="data:image/png;base64,{{ chart_roc }}" alt="ROC curves" class="chart-img">
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+             7. FEATURE IMPORTANCE
+             ═══════════════════════════════════════════════════════ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>🧬 Feature Importance Analysis</h2>
+                <p class="chart-desc">Which water parameters matter most for XGBoost and LightGBM predictions.</p>
+            </div>
+            <div class="chart-img-wrapper">
+                <img src="data:image/png;base64,{{ chart_feature_imp }}" alt="Feature importance" class="chart-img">
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div style="text-align: center; padding: 12px 0 40px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+            <a href="/" class="btn-back" id="btn-back">← Analyze Another Sample</a>
+            <a href="/guidelines" class="btn-back" id="btn-guidelines">📋 View Safe Standards</a>
+        </div>
+    </div>
+
+    <script>
+        // Stagger-in animation for chart cards
+        document.querySelectorAll('.chart-card, .result-container').forEach((el, i) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = `opacity 0.5s ease ${i * 0.1}s, transform 0.5s ease ${i * 0.1}s`;
+            requestAnimationFrame(() => {
+                el.style.opacity = '1';
+                el.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Animate prediction bar fills
+        document.querySelectorAll('.model-pred-bar-fill').forEach((el) => {
+            const w = el.style.width;
+            el.style.width = '0';
+            el.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.5s';
+            requestAnimationFrame(() => { el.style.width = w; });
+        });
+    </script>
+    {% include 'chatbot.html' %}
+</body>
+
+</html>

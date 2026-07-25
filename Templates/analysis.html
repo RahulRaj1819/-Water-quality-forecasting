@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Comprehensive dataset analysis results — EDA, missing values, correlation, model performance.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💧</text></svg>">
+    <title>Analysis Results — Water Quality</title>
+</head>
+
+<body>
+    <div class="result-page">
+
+        <!-- ═══ 1. DATASET OVERVIEW ═══ -->
+        <div class="result-container">
+            <div class="header">
+                <div class="header-icon">📊</div>
+                <h1>Dataset Analysis Complete</h1>
+                <p class="subtitle">Comprehensive EDA & model training results</p>
+            </div>
+
+            <!-- Stats grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ overview.rows }}</div>
+                    <div class="stat-label">Rows</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ overview.cols }}</div>
+                    <div class="stat-label">Features</div>
+                </div>
+                <div class="stat-card {{ 'stat-warn' if overview.total_missing > 0 else 'stat-ok' }}">
+                    <div class="stat-value">{{ overview.total_missing }}</div>
+                    <div class="stat-label">Missing Values</div>
+                </div>
+                {% if overview.target_dist %}
+                <div class="stat-card">
+                    <div class="stat-value">{{ overview.target_dist.get('0', 0) }} / {{ overview.target_dist.get('1', 0) }}</div>
+                    <div class="stat-label">Not Potable / Potable</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Missing values per column -->
+            {% if overview.total_missing > 0 %}
+            <div style="margin-top: 20px;">
+                <div class="section-title"><span>⚠️ Missing Values by Feature</span></div>
+                <div class="missing-grid">
+                    {% for col, info in overview.missing.items() %}
+                    {% if info.count > 0 %}
+                    <div class="missing-item">
+                        <span class="missing-name">{{ col }}</span>
+                        <div class="missing-bar-track">
+                            <div class="missing-bar-fill" style="width: {{ info.pct }}%;"></div>
+                        </div>
+                        <span class="missing-val">{{ info.count }} ({{ info.pct }}%)</span>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ═══ 2. MISSING VALUE HEATMAP ═══ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>🔍 Missing Value Analysis</h2>
+                <p class="chart-desc">Red cells indicate missing values. Bar chart shows count per feature.</p>
+            </div>
+            <div class="chart-img-wrapper">
+                <img src="data:image/png;base64,{{ chart_missing }}" alt="Missing value heatmap" class="chart-img">
+            </div>
+        </div>
+
+        <!-- ═══ 3. CORRELATION HEATMAP ═══ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>🔗 Correlation Heatmap</h2>
+                <p class="chart-desc">Pairwise Pearson correlation between all numeric features. Strong correlations may indicate feature redundancy.</p>
+            </div>
+            <div class="chart-img-wrapper">
+                <img src="data:image/png;base64,{{ chart_correlation }}" alt="Correlation heatmap" class="chart-img">
+            </div>
+        </div>
+
+        <!-- ═══ 4. DISTRIBUTIONS ═══ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>📈 Feature Distributions</h2>
+                <p class="chart-desc">Histograms of each feature, colored by Potability class (green = potable, red = not potable).</p>
+            </div>
+            <div class="chart-img-wrapper">
+                <img src="data:image/png;base64,{{ chart_distributions }}" alt="Feature distributions" class="chart-img">
+            </div>
+        </div>
+
+        {% if training %}
+        <!-- ═══ 5. FEATURE SCALING ═══ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>⚖️ Feature Scaling (Before vs After)</h2>
+                <p class="chart-desc">Box plots showing raw values vs StandardScaler-transformed values. Scaling normalizes all features to mean=0, std=1.</p>
+            </div>
+            <div class="chart-img-wrapper">
+                <img src="data:image/png;base64,{{ training.chart_scaling }}" alt="Feature scaling" class="chart-img">
+            </div>
+        </div>
+
+        <!-- ═══ 6. MODEL PERFORMANCE TABLE ═══ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>🏆 Model Performance Metrics
+                    <span class="badge-sm">Train: {{ training.train_size }} / Test: {{ training.test_size }}</span>
+                </h2>
+                <p class="chart-desc">All models trained on your uploaded dataset with 80/20 stratified split.</p>
+            </div>
+
+            <div class="metrics-table-wrapper">
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Accuracy</th>
+                            <th>Precision</th>
+                            <th>Recall</th>
+                            <th>F1-Score</th>
+                            <th>ROC-AUC</th>
+                            <th>CV (5-Fold)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in training.results %}
+                        <tr class="{{ 'highlight-row' if m.name == training.best_model.name }}">
+                            <td class="model-name-cell">
+                                {{ m.name }}
+                                {% if m.name == training.best_model.name %}<span class="star-badge">★ Best</span>{% endif %}
+                            </td>
+                            <td>{{ m.accuracy }}</td>
+                            <td>{{ m.precision }}</td>
+                            <td>{{ m.recall }}</td>
+                            <td>{{ m.f1 }}</td>
+                            <td>{{ m.auc }}</td>
+                            <td>
+                                {% if m.cv_mean %}
+                                {{ m.cv_mean }} ± {{ m.cv_std }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══ 7. MODEL COMPARISON ═══ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>📊 Model Performance Comparison</h2>
+                <p class="chart-desc">Grouped bar chart comparing all metrics across the trained models.</p>
+            </div>
+            <div class="chart-img-wrapper">
+                <img src="data:image/png;base64,{{ training.chart_comparison }}" alt="Model comparison" class="chart-img">
+            </div>
+        </div>
+
+        <!-- ═══ 8. CONFUSION MATRICES ═══ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>🔢 Confusion Matrices — All Models</h2>
+                <p class="chart-desc">True vs predicted classifications. Diagonal cells = correct predictions.</p>
+            </div>
+            <div class="chart-img-wrapper">
+                <img src="data:image/png;base64,{{ training.chart_confusion }}" alt="Confusion matrices" class="chart-img">
+            </div>
+        </div>
+
+        <!-- ═══ 9. ROC CURVES ═══ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>📉 ROC Curves</h2>
+                <p class="chart-desc">Receiver Operating Characteristic curves — trade-off between sensitivity and specificity.</p>
+            </div>
+            <div class="chart-img-wrapper">
+                <img src="data:image/png;base64,{{ training.chart_roc }}" alt="ROC curves" class="chart-img">
+            </div>
+        </div>
+
+        <!-- ═══ 10. FEATURE IMPORTANCE ═══ -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h2>🧬 Feature Importance</h2>
+                <p class="chart-desc">Which features matter most for XGBoost and LightGBM classification decisions.</p>
+            </div>
+            <div class="chart-img-wrapper">
+                <img src="data:image/png;base64,{{ training.chart_feature_imp }}" alt="Feature importance" class="chart-img">
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Navigation -->
+        <div style="text-align: center; padding: 12px 0 40px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+            <a href="/upload" class="btn-back" id="btn-reupload">📂 Upload Another Dataset</a>
+            <a href="/" class="btn-back" id="btn-home">💧 Predict Water Quality</a>
+            <a href="/guidelines" class="btn-back" id="btn-guide">📋 View Standards</a>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.chart-card, .result-container').forEach((el, i) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(18px)';
+            el.style.transition = `opacity 0.45s ease ${i * 0.08}s, transform 0.45s ease ${i * 0.08}s`;
+            requestAnimationFrame(() => {
+                el.style.opacity = '1';
+                el.style.transform = 'translateY(0)';
+            });
+        });
+        document.querySelectorAll('.missing-bar-fill').forEach((el, i) => {
+            const w = el.style.width;
+            el.style.width = '0';
+            el.style.transition = `width 0.6s ease ${0.3 + i * 0.08}s`;
+            requestAnimationFrame(() => { el.style.width = w; });
+        });
+    </script>
+</body>
+
+</html>

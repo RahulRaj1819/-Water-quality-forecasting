@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Analyze water quality by entering key water parameters. Get instant potability predictions using machine learning.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💧</text></svg>">
+    <title>Water Quality Analysis — Potability Prediction</title>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-icon">💧</div>
+            <h1>Water Quality Analysis</h1>
+            <p class="subtitle">Enter water parameters to predict potability</p>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 12px; flex-wrap: wrap;">
+                <a href="/guidelines" class="nav-link">📋 Safe Water Standards</a>
+                <a href="/upload" class="nav-link">📂 Upload Dataset</a>
+                <a href="/batch" class="nav-link">🚀 Batch Predict</a>
+            </div>
+        </div>
+
+        <!-- Info bar -->
+        <div class="info-bar">
+            <span class="icon">ℹ️</span>
+            Fields marked <strong>Optional</strong> can be left blank — the model will use dataset median values.
+            All other fields are <strong>required</strong>.
+        </div>
+
+        <form id="waterForm" action="/predict_waterQ" method="POST">
+
+            <!-- ═══ Required Parameters ═══ -->
+            <div class="section-title">
+                <span>🔬 Core Parameters</span>
+                <span class="badge">Required</span>
+            </div>
+
+            <div class="input-grid">
+                <div class="form-group">
+                    <label for="hardness">
+                        Hardness
+                        <span class="unit">(mg/L)</span>
+                    </label>
+                    <input type="number" id="hardness" name="hardness" placeholder="e.g. 204.89"
+                           step="0.01" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="chloramines">
+                        Chloramines
+                        <span class="unit">(ppm)</span>
+                    </label>
+                    <input type="number" id="chloramines" name="chloramines" placeholder="e.g. 7.30"
+                           step="0.01" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="conductivity">
+                        Conductivity
+                        <span class="unit">(μS/cm)</span>
+                    </label>
+                    <input type="number" id="conductivity" name="conductivity" placeholder="e.g. 564.31"
+                           step="0.01" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="organicCarbon">
+                        Organic Carbon
+                        <span class="unit">(ppm)</span>
+                    </label>
+                    <input type="number" id="organicCarbon" name="organicCarbon" placeholder="e.g. 10.38"
+                           step="0.01" min="0" required>
+                </div>
+            </div>
+
+            <!-- ═══ Optional Parameters ═══ -->
+            <div class="section-title">
+                <span>⚗️ Additional Parameters</span>
+                <span class="badge">Optional</span>
+            </div>
+
+            <div class="input-grid">
+                <div class="form-group">
+                    <label for="ph">
+                        pH Value
+                        <span class="unit">(0 – 14)</span>
+                        <span class="optional-tag">Optional</span>
+                    </label>
+                    <input type="number" id="ph" name="ph" placeholder="e.g. 7.08"
+                           step="0.01" min="0" max="14">
+                </div>
+
+                <div class="form-group">
+                    <label for="solids">
+                        Total Dissolved Solids
+                        <span class="unit">(ppm)</span>
+                        <span class="optional-tag">Optional</span>
+                    </label>
+                    <input type="number" id="solids" name="solids" placeholder="e.g. 20791.32"
+                           step="0.01" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="sulfate">
+                        Sulfate
+                        <span class="unit">(mg/L)</span>
+                        <span class="optional-tag">Optional</span>
+                    </label>
+                    <input type="number" id="sulfate" name="sulfate" placeholder="e.g. 368.52"
+                           step="0.01" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="trihalomethanes">
+                        Trihalomethanes
+                        <span class="unit">(μg/L)</span>
+                        <span class="optional-tag">Optional</span>
+                    </label>
+                    <input type="number" id="trihalomethanes" name="trihalomethanes" placeholder="e.g. 86.99"
+                           step="0.01" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="turbidity">
+                        Turbidity
+                        <span class="unit">(NTU)</span>
+                        <span class="optional-tag">Optional</span>
+                    </label>
+                    <input type="number" id="turbidity" name="turbidity" placeholder="e.g. 2.96"
+                           step="0.01" min="0">
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="btn-predict" id="btn-predict">
+                🔍&nbsp; Analyze Water Quality
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // Subtle entrance animation for form groups
+        document.querySelectorAll('.form-group').forEach((el, i) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(12px)';
+            el.style.transition = `opacity 0.4s ease ${i * 0.06}s, transform 0.4s ease ${i * 0.06}s`;
+            requestAnimationFrame(() => {
+                el.style.opacity = '1';
+                el.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+    {% include 'chatbot.html' %}
+</body>
+
+</html>
