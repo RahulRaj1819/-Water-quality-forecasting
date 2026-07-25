@@ -16,8 +16,9 @@ import os
 import io
 import google.generativeai as genai
 
-# Configure Gemini
-genai.configure(api_key="AIzaSyBmppH6aFbeu18WUPXeGaMVVVFtYnIU584")
+# Configure Gemini — key loaded from environment variable (never hardcode secrets)
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+genai.configure(api_key=GEMINI_API_KEY)
 
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
