@@ -8,20 +8,6 @@ and generates comprehensive analysis with charts on prediction.
 import warnings
 warnings.filterwarnings("ignore")
 
-# ── NumPy BitGenerator compatibility patch ─────────────────────────────────────
-# Pkl files saved with old NumPy stored the BitGenerator as a class object.
-# Newer NumPy expects a string name — this patch bridges the gap.
-import numpy.random._pickle as _np_rand_pickle
-_original_bit_gen_ctor = _np_rand_pickle.__bit_generator_ctor
-
-def _compat_bit_generator_ctor(bit_generator_name='MT19937'):
-    if isinstance(bit_generator_name, type):
-        bit_generator_name = bit_generator_name.__name__
-    return _original_bit_gen_ctor(bit_generator_name)
-
-_np_rand_pickle.__bit_generator_ctor = _compat_bit_generator_ctor
-# ──────────────────────────────────────────────────────────────────────────────
-
 from flask import Flask, render_template, request, jsonify, url_for
 import pandas as pd
 import numpy as np
@@ -29,6 +15,7 @@ import joblib
 import os
 import io
 import google.generativeai as genai
+
 
 # Configure Gemini — key loaded from environment variable (never hardcode secrets)
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
