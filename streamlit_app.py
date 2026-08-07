@@ -95,12 +95,20 @@ DEFAULTS = {
 }
 
 # ── Configure Gemini AI ────────────────────────────────────────
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-if GEMINI_API_KEY:
-    try:
-        genai.configure(api_key=GEMINI_API_KEY)
-    except Exception:
-        pass
+def get_active_gemini_key():
+    key = os.environ.get("GEMINI_API_KEY", "")
+    if not key:
+        try:
+            if "GEMINI_API_KEY" in st.secrets:
+                key = st.secrets["GEMINI_API_KEY"]
+        except Exception:
+            pass
+    if not key and st.session_state.get("custom_gemini_key"):
+        key = st.session_state.get("custom_gemini_key")
+    if not key:
+        key = "AIzaSyBmppH6aFbeu18WUPXeGaMVVVFtYnIU584"
+    return key
+
 
 # ── Pre-compute Dataset Evaluation Metrics ────────────────────
 @st.cache_data
@@ -420,9 +428,28 @@ elif nav_choice == "🤖 AI Research Assistant":
     st.title("🤖 Gemini AI Water Research Assistant")
     st.write("Ask questions regarding water quality forecasting, WQI methodology, and predictive analytics models.")
 
-    if not GEMINI_API_KEY:
-        st.warning("⚠️ `GEMINI_API_KEY` is not set in environment variables. Please set the key to enable live Gemini AI chat.")
-    
+    current_key = get_active_gemini_key()
+
+    with st.expander("🔑 Gemini API Key Configuration", expanded=not bool(current_key)):
+        user_key_input = st.text_input(
+            "Enter your Gemini API Key (Optional override):",
+            value=current_key,
+            type="password",
+            help="Get your key from Google AI Studio (https://aistudio.google.com/app/apikey)"
+        )
+        if user_key_input:
+            st.session_state["custom_gemini_key"] = user_key_input.strip()
+            current_key = user_key_input.strip()
+
+    if current_key:
+        try:
+            genai.configure(api_key=current_key)
+            st.success("✅ Gemini AI Core Connected")
+        except Exception as e:
+            st.error(f"Failed to configure Gemini API Key: {e}")
+    else:
+        st.warning("⚠️ No Gemini API Key provided. Please enter a key above or set `GEMINI_API_KEY` in environment variables.")
+
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
@@ -435,7 +462,7 @@ elif nav_choice == "🤖 AI Research Assistant":
         with st.chat_message("user"):
             st.markdown(user_prompt)
 
-        if GEMINI_API_KEY:
+        if current_key:
             try:
                 model = genai.GenerativeModel('gemini-1.5-flash')
                 sys_prompt = (
@@ -452,3 +479,4 @@ elif nav_choice == "🤖 AI Research Assistant":
         st.session_state.messages.append({"role": "assistant", "content": ai_text})
         with st.chat_message("assistant"):
             st.markdown(ai_text)
+
